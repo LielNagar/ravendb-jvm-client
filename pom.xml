@@ -26,9 +26,9 @@
 
     <developers>
         <developer>
-            <email>marcin@ravendb.net</email>
-            <id>marcin@ravendb.net</id>
-            <name>Marcin Lewandowski</name>
+            <email>liel.nagar@ravendb.net</email>
+            <id>liel.nagar@ravendb.net</id>
+            <name>Liel Nagar</name>
             <organizationUrl>http://ravendb.net</organizationUrl>
             <roles>
                 <role>developer</role>
@@ -143,13 +143,6 @@
         </dependency>
     </dependencies>
 
-    <distributionManagement>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
     <build>
         <plugins>
             <plugin>
@@ -242,6 +235,15 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.3</version>
             </plugin>
+			<plugin>
+			  <groupId>org.sonatype.central</groupId>
+			  <artifactId>central-publishing-maven-plugin</artifactId>
+			  <version>0.7.0</version>
+			  <extensions>true</extensions>
+			  <configuration>
+				<publishingServerId>central</publishingServerId>
+			  </configuration>
+			</plugin>
         </plugins>
     </build>
     <profiles>
