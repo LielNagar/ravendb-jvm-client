@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class AiConversation {
     private final AiOperations aiOperations;
@@ -226,6 +227,29 @@ public class AiConversation {
         }, strategy);
     }
 
+    /**
+     * Registers a handler for an action tool that takes no arguments.
+     * The handler's return value is sent to the model as the tool response.
+     *
+     * @param actionName the name of the action tool
+     * @param handler supplies the tool response
+     */
+    public void handle(String actionName, Supplier<Object> handler) {
+        handle(actionName, handler, AiHandleErrorStrategy.SendErrorsToModel);
+    }
+
+    /**
+     * Registers a handler for an action tool that takes no arguments.
+     * The handler's return value is sent to the model as the tool response.
+     *
+     * @param actionName the name of the action tool
+     * @param handler supplies the tool response
+     * @param strategy how errors thrown by the handler are handled
+     */
+    public void handle(String actionName, Supplier<Object> handler, AiHandleErrorStrategy strategy) {
+        handle(actionName, args -> handler.get(), strategy);
+    }
+
     private CompletableFuture<Object> toFuture(Object result) {
         if (result instanceof CompletableFuture) {
             return (CompletableFuture<Object>) result;
@@ -254,6 +278,29 @@ public class AiConversation {
         };
 
         invocations.put(actionName, invocation);
+    }
+
+    /**
+     * Registers a receiver for an action tool that takes no arguments.
+     * The receiver is responsible for adding the tool response via {@link #addActionResponse(String, Object)}.
+     *
+     * @param actionName the name of the action tool
+     * @param action receives the action request
+     */
+    public void receive(String actionName, Consumer<AiAgentActionRequest> action) {
+        receive(actionName, action, AiHandleErrorStrategy.SendErrorsToModel);
+    }
+
+    /**
+     * Registers a receiver for an action tool that takes no arguments.
+     * The receiver is responsible for adding the tool response via {@link #addActionResponse(String, Object)}.
+     *
+     * @param actionName the name of the action tool
+     * @param action receives the action request
+     * @param strategy how errors thrown by the receiver are handled
+     */
+    public void receive(String actionName, Consumer<AiAgentActionRequest> action, AiHandleErrorStrategy strategy) {
+        receive(actionName, (request, args) -> action.accept(request), strategy);
     }
 
     public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> stream(SerializableFunction<TAnswer, ?> streamProperty, AiStreamCallback streamCallback) {
