@@ -318,6 +318,86 @@ public class AiConversation {
             throw new IllegalArgumentException("streamCallback cannot be null");
         }
 
+        return streamTurn(streamPropertyPath, streamCallback, null);
+    }
+
+    /**
+     * Executes one turn of the conversation, streaming the specified property's value, with output format options
+     * that override the agent's default output schema for this turn only.
+     *
+     * @param streamPropertyPath the property of the response to stream; not used when noSchema is set
+     * @param streamCallback invoked with each streamed chunk
+     * @param outputOptions options controlling the output format for this turn
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> streamWithSchema(String streamPropertyPath, AiStreamCallback streamCallback, AiOutputOptions outputOptions) {
+        validateOutputOptions(outputOptions);
+        if (!outputOptions.isNoSchema() && StringUtils.isBlank(streamPropertyPath)) {
+            throw new IllegalArgumentException("streamPropertyPath cannot be empty");
+        }
+        if (streamCallback == null) {
+            throw new IllegalArgumentException("streamCallback cannot be null");
+        }
+
+        return streamTurn(StringUtils.defaultString(streamPropertyPath), streamCallback, outputOptions);
+    }
+
+    /**
+     * Executes one turn of the conversation, streaming the specified property's value, with output format options
+     * that override the agent's default output schema for this turn only.
+     *
+     * @param streamProperty the property of the response to stream
+     * @param streamCallback invoked with each streamed chunk
+     * @param outputOptions options controlling the output format for this turn
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> streamWithSchema(SerializableFunction<TAnswer, ?> streamProperty, AiStreamCallback streamCallback, AiOutputOptions outputOptions) {
+        return streamWithSchema(expressionExtension.toPropertyPath(streamProperty, aiOperations.store.getConventions()), streamCallback, outputOptions);
+    }
+
+    /**
+     * Executes one turn of the conversation, streaming the specified property's value, deriving the output schema
+     * from the sample object for this turn only.
+     *
+     * @param streamPropertyPath the property of the response to stream
+     * @param streamCallback invoked with each streamed chunk
+     * @param sampleObject a sample answer used to derive the output schema for this turn
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> streamWithSchema(String streamPropertyPath, AiStreamCallback streamCallback, TAnswer sampleObject) {
+        return streamWithSchema(streamPropertyPath, streamCallback, new AiOutputOptions(sampleObject));
+    }
+
+    /**
+     * Executes one turn of the conversation, streaming the specified property's value, deriving the output schema
+     * from the sample object for this turn only.
+     *
+     * @param streamProperty the property of the response to stream
+     * @param streamCallback invoked with each streamed chunk
+     * @param sampleObject a sample answer used to derive the output schema for this turn
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> streamWithSchema(SerializableFunction<TAnswer, ?> streamProperty, AiStreamCallback streamCallback, TAnswer sampleObject) {
+        return streamWithSchema(streamProperty, streamCallback, new AiOutputOptions(sampleObject));
+    }
+
+    /**
+     * Executes one turn of the conversation without structured output, streaming the raw text response.
+     *
+     * @param streamCallback invoked with each streamed text chunk
+     * @return the answer of this turn, as raw text
+     */
+    public CompletableFuture<AiAnswer<String>> streamWithoutSchema(AiStreamCallback streamCallback) {
+        AiOutputOptions outputOptions = new AiOutputOptions();
+        outputOptions.setNoSchema(true);
+        return streamWithSchema("", streamCallback, outputOptions);
+    }
+
+    private <TAnswer> CompletableFuture<AiAnswer<TAnswer>> streamTurn(String streamPropertyPath, AiStreamCallback streamCallback, AiOutputOptions outputOptions) {
         CompletableFuture<AiAnswer<TAnswer>> future = new CompletableFuture<>();
 
         CompletableFuture.runAsync(() -> {
@@ -325,7 +405,7 @@ public class AiConversation {
                 @SuppressWarnings("unchecked")
                 AiAnswer<TAnswer> result;
                 try {
-                    result = (AiAnswer<TAnswer>) runInternal(streamPropertyPath, streamCallback).join();
+                    result = (AiAnswer<TAnswer>) runInternal(streamPropertyPath, streamCallback, outputOptions).join();
                 } catch (Exception e) {
                     future.completeExceptionally(e);
                     return;
@@ -380,12 +460,62 @@ public class AiConversation {
     }
 
     public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> run() {
+        return runTurn(null);
+    }
+
+    /**
+     * Executes one turn of the conversation with output format options that override the agent's default
+     * output schema for this turn only, or disable structured output.
+     *
+     * @param outputOptions options controlling the output format for this turn
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> runWithSchema(AiOutputOptions outputOptions) {
+        validateOutputOptions(outputOptions);
+        return runTurn(outputOptions);
+    }
+
+    /**
+     * Executes one turn of the conversation, deriving the output schema from the sample object for this turn only.
+     *
+     * @param sampleObject a sample answer used to generate the JSON schema sent to the LLM
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> runWithSchema(TAnswer sampleObject) {
+        return runWithSchema(new AiOutputOptions(sampleObject));
+    }
+
+    /**
+     * Executes one turn of the conversation with an explicit JSON schema override for this turn only.
+     *
+     * @param schema an explicit JSON schema to send to the LLM for this turn
+     * @param <TAnswer> the expected type of the answer
+     * @return the answer of this turn
+     */
+    public <TAnswer> CompletableFuture<AiAnswer<TAnswer>> runWithSchema(String schema) {
+        return runWithSchema(new AiOutputOptions(schema));
+    }
+
+    /**
+     * Executes one turn of the conversation without structured output, returning raw text.
+     *
+     * @return the answer of this turn, as raw text
+     */
+    public CompletableFuture<AiAnswer<String>> runWithoutSchema() {
+        AiOutputOptions outputOptions = new AiOutputOptions();
+        outputOptions.setNoSchema(true);
+        return runWithSchema(outputOptions);
+    }
+
+    private <TAnswer> CompletableFuture<AiAnswer<TAnswer>> runTurn(AiOutputOptions outputOptions) {
         return CompletableFuture.supplyAsync(() -> {
             this.dispatchedToolIds.clear();
 
             while (true) {
                 @SuppressWarnings("unchecked")
-                AiAnswer<TAnswer> result = (AiAnswer<TAnswer>) runInternal(null, null).join();
+                AiAnswer<TAnswer> result = (AiAnswer<TAnswer>) runInternal(null, null, outputOptions).join();
 
                 if (result.getStatus() == AiConversationResult.Done) {
                     return result;
@@ -430,7 +560,7 @@ public class AiConversation {
         });
     }
 
-    private <TAnswer> CompletableFuture<AiAnswer<TAnswer>> runInternal(String streamPropertyPath, AiStreamCallback streamCallback) {
+    private <TAnswer> CompletableFuture<AiAnswer<TAnswer>> runInternal(String streamPropertyPath, AiStreamCallback streamCallback, AiOutputOptions outputOptions) {
         try {
             if (this.actionRequests != null && this.actionRequests.isEmpty() && this.promptParts.isEmpty() && this.actionResponses.isEmpty() && this.attachmentsCommands.isEmpty()) {
                 AiAnswer<TAnswer> doneAnswer = new AiAnswer<>();
@@ -448,7 +578,8 @@ public class AiConversation {
                     this.changeVector,
                     new ArrayList<>(this.attachmentsCommands),
                     streamPropertyPath,
-                    streamCallback
+                    streamCallback,
+                    outputOptions
             );
 
             ConversationResult<TAnswer> result = this.aiOperations.getExecutor().send(op);
@@ -473,6 +604,19 @@ public class AiConversation {
             this.actionResponses.clear();
             this.artificialActions.clear();
             this.attachmentsCommands.clear();
+        }
+    }
+
+    private static void validateOutputOptions(AiOutputOptions outputOptions) {
+        if (outputOptions == null) {
+            throw new IllegalArgumentException("outputOptions cannot be null");
+        }
+
+        // the answer type is erased at runtime, so only the checks that don't depend on it can be done here
+        if (outputOptions.isNoSchema() && (outputOptions.getOutputSchema() != null || outputOptions.getSampleObject() != null)) {
+            throw new IllegalStateException("When noSchema is set to true you cannot set an output schema or a sample object, " +
+                    "because the model is expected to return just a string, with no structure. " +
+                    "You can either set noSchema to false, or remove the output schema and sample object.");
         }
     }
 
