@@ -761,9 +761,6 @@ public class DocumentSession extends InMemoryDocumentSessionOperations
             if (jsonPointer != null) {
                 JsonPatchDocument jsonPatch = new JsonPatchDocument();
 
-                // Match the JavaScript "this.x = value" semantics: assigning to a named member creates it when
-                // absent (JsonPatch "add" creates-or-replaces an object member), while assigning to an existing
-                // array element overwrites it in place (JsonPatch "replace"; "add" would insert before the index).
                 if (isNamedMemberAccess(path)) {
                     jsonPatch.add(jsonPointer, value);
                 } else {
@@ -878,8 +875,6 @@ public class DocumentSession extends InMemoryDocumentSessionOperations
     }
 
     private static boolean shouldUseJsonPatch(Object value) {
-        // scalar values (the counterparts of .NET value types and strings) use JsonPatch,
-        // complex objects keep using JavaScript patches
         return value == null
                 || value instanceof String
                 || value instanceof Number
@@ -909,7 +904,6 @@ public class DocumentSession extends InMemoryDocumentSessionOperations
                 return null;
             }
 
-            // identifiers can't contain '~' or '/', so no escaping is needed here
             jsonPointer.append('/').append(segmentMatcher.group(1));
 
             Matcher indexerMatcher = PATH_INDEXER.matcher(segmentMatcher.group(2));
@@ -922,7 +916,6 @@ public class DocumentSession extends InMemoryDocumentSessionOperations
     }
 
     private static boolean isNamedMemberAccess(String path) {
-        // a named member maps to a JSON object member, an indexer to an existing array element
         return !path.endsWith("]");
     }
 
@@ -931,7 +924,6 @@ public class DocumentSession extends InMemoryDocumentSessionOperations
     }
 
     private static boolean isValidJsonPointerSegment(String segment) {
-        // the server rejects whitespace-only path segments, fall back to JavaScript for such keys
         return StringUtils.isNotBlank(segment);
     }
 

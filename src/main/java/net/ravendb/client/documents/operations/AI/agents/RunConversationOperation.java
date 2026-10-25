@@ -152,10 +152,6 @@ public class RunConversationOperation<TAnswer> implements IMaintenanceOperation<
         return attachmentsCommands;
     }
 
-    public AiOutputOptions getOutputOptions() {
-        return outputOptions;
-    }
-
     class RunConversationCommand<TAnswer>
             extends RavenCommand<ConversationResult<TAnswer>>
             implements IRaftCommand {
@@ -225,8 +221,8 @@ public class RunConversationOperation<TAnswer> implements IMaintenanceOperation<
                     bodyObj.set("ArtificialActions", mapper.valueToTree(this.parent.getArtificialActions()));
                     bodyObj.set("UserPrompt", mapper.valueToTree(this.parent.getPromptParts()));
                     bodyObj.set("CreationOptions", mapper.valueToTree(this.parent.getOptions()));
-                    if (this.parent.getOutputOptions() != null) {
-                        bodyObj.set("OutputOptions", outputOptionsToJson(this.parent.getOutputOptions()));
+                    if (this.parent.outputOptions != null) {
+                        bodyObj.set("OutputOptions", outputOptionsToJson(this.parent.outputOptions));
                     }
                     generator.writeTree(bodyObj);
                 }
@@ -293,7 +289,6 @@ public class RunConversationOperation<TAnswer> implements IMaintenanceOperation<
         private ObjectNode outputOptionsToJson(AiOutputOptions outputOptions) throws JsonProcessingException {
             ObjectNode json = mapper.createObjectNode();
             if (outputOptions.getSampleObject() != null) {
-                // the server expects the sample object as a JSON string
                 json.put("SampleObject", conventions.getEntityMapper().writeValueAsString(outputOptions.getSampleObject()));
             }
             if (outputOptions.getOutputSchema() != null) {

@@ -61,7 +61,6 @@ public class JsonPatchCommandData implements ICommandData {
             generator.writeStringField("op", operation.getOp());
             generator.writeStringField("path", operation.getPath());
             if (!"remove".equals(operation.getOp())) {
-                // the server requires "value" for add/replace, even when it is null
                 generator.writeFieldName("value");
                 conventions.getEntityMapper().writeValue(generator, operation.getValue());
             }
