@@ -53,21 +53,7 @@ public class JsonPatchCommandData implements ICommandData {
         generator.writeNullField("ChangeVector");
 
         generator.writeFieldName("JsonPatch");
-        generator.writeStartObject();
-        generator.writeFieldName("Operations");
-        generator.writeStartArray();
-        for (JsonPatchDocument.Operation operation : jsonPatch.getOperations()) {
-            generator.writeStartObject();
-            generator.writeStringField("op", operation.getOp());
-            generator.writeStringField("path", operation.getPath());
-            if (!"remove".equals(operation.getOp())) {
-                generator.writeFieldName("value");
-                conventions.getEntityMapper().writeValue(generator, operation.getValue());
-            }
-            generator.writeEndObject();
-        }
-        generator.writeEndArray();
-        generator.writeEndObject();
+        jsonPatch.serialize(generator, conventions.getEntityMapper());
 
         generator.writeBooleanField("ReturnDocument", returnDocument);
         generator.writeStringField("Type", "JsonPatch");
