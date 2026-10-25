@@ -66,10 +66,12 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    // the tests below need a live OpenAI model and run only when the API key is set
-    private static final String OPENAI_API_KEY = "RAVENDB_JAVA_TESTS_OPENAI_API_KEY";
+    // the tests below need a live OpenAI model and run only when the API key is set (non-blank),
+    // using the same environment variable as the C# tests (RavenTestHelper.EnvironmentVariables.AiIntegrationOpenAiApiKeyEnvName)
+    private static final String OPENAI_API_KEY = "RAVEN_AI_INTEGRATION_OPENAI_API_KEY";
+    private static final String NOT_BLANK = "(?s).*\\S.*";
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void outputSchemaFieldTrackedPerTurnInDocument() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -113,7 +115,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void runWithoutSchemaReturnsRawString() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -127,7 +129,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void streamWithoutSchemaStreamsRawText() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -145,7 +147,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void convenienceOverloadsWork() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -167,7 +169,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void canHandleNoArgsTool() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -195,7 +197,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void multiTurnConversationResumesCorrectlyAfterNoSchemaTurn() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -214,7 +216,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = NOT_BLANK)
     @Test
     public void canStreamWithSchemaOverride() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
