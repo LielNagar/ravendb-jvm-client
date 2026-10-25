@@ -18,7 +18,7 @@ import net.ravendb.client.documents.operations.connectionStrings.PutConnectionSt
 import net.ravendb.client.documents.session.IDocumentSession;
 import net.ravendb.client.infrastructure.EnableOnServer;
 import net.ravendb.client.test.client.documents.AI.AiOutputOptionsTest.AlternativeSchema;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -66,9 +66,10 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    // the tests below need a live OpenAI model, like the conversation tests in AiAgentTests
+    // the tests below need a live OpenAI model and run only when the API key is set
+    private static final String OPENAI_API_KEY = "RAVENDB_JAVA_TESTS_OPENAI_API_KEY";
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void outputSchemaFieldTrackedPerTurnInDocument() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -112,7 +113,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void runWithoutSchemaReturnsRawString() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -126,7 +127,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void streamWithoutSchemaStreamsRawText() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -144,7 +145,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void convenienceOverloadsWork() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -166,7 +167,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void canHandleNoArgsTool() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -194,7 +195,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void multiTurnConversationResumesCorrectlyAfterNoSchemaTurn() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -213,7 +214,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
         }
     }
 
-    @Disabled("requires RAVENDB_JAVA_TESTS_OPENAI_API_KEY")
+    @EnabledIfEnvironmentVariable(named = OPENAI_API_KEY, matches = ".+")
     @Test
     public void canStreamWithSchemaOverride() throws Exception {
         try (IDocumentStore store = getDocumentStore()) {
@@ -234,8 +235,7 @@ public class RavenDB_24824Test extends RemoteTestBase {
     }
 
     private static String putOpenAiConnectionString(IDocumentStore store) {
-        String apiKey = System.getenv("RAVENDB_JAVA_TESTS_OPENAI_API_KEY");
-        assertThat(apiKey).as("OpenAI API key in RAVENDB_JAVA_TESTS_OPENAI_API_KEY").isNotNull();
+        String apiKey = System.getenv(OPENAI_API_KEY);
 
         AiConnectionString connectionString = new AiConnectionString();
         connectionString.setName("openai");
@@ -270,10 +270,10 @@ public class RavenDB_24824Test extends RemoteTestBase {
             "\"schema\": {" +
             "  \"type\": \"object\"," +
             "  \"properties\": {" +
-            "    \"Summary\": { \"type\": \"string\" }," +
-            "    \"Score\": { \"type\": \"integer\" }" +
+            "    \"summary\": { \"type\": \"string\" }," +
+            "    \"score\": { \"type\": \"integer\" }" +
             "  }," +
-            "  \"required\": [\"Summary\", \"Score\"]," +
+            "  \"required\": [\"summary\", \"score\"]," +
             "  \"additionalProperties\": false" +
             "}}";
 

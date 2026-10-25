@@ -81,6 +81,38 @@ public class VectorSearchTokenAliasTest extends RemoteTestBase {
         }
     }
 
+    @Test
+    public void exactVectorSearchTokenSurvivesFromAliasWhenProjectionIsJsObject() throws Exception {
+        try (IDocumentStore store = getDocumentStore()) {
+            try (IDocumentSession session = store.openSession()) {
+                User match = new User();
+                match.setName("Ali");
+                session.store(match);
+
+                User other = new User();
+                other.setName("Car");
+                session.store(other);
+
+                session.saveChanges();
+            }
+
+            try (IDocumentSession session = store.openSession()) {
+                IDocumentQuery<UserResult> query = session.query(User.class)
+                        .vectorSearch(x -> x.withText("name"), v -> v.byText("Ali"), 0.75f, null, true)
+                        .selectFields(UserResult.class, QueryData.customFunction("d", "{ name: d.name }"));
+
+                ((AbstractDocumentQuery<?, ?>) query).addFromAliasToWhereTokens("d");
+
+                String rql = query.toString();
+                assertThat(rql).contains("exact(vector.search(embedding.text(d.name), $p0, 0.75, null))");
+                assertThat(rql).doesNotContain("d.name = ");
+
+                List<UserResult> results = query.toList();
+                assertThat(results).extracting(UserResult::getName).containsExactly("Ali");
+            }
+        }
+    }
+
     public static class UserResult {
         private String name;
 

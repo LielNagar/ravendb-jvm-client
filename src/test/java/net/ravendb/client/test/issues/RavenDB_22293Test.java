@@ -338,7 +338,7 @@ public class RavenDB_22293Test extends RemoteTestBase {
     }
 
     @Test
-    public void patch_withOptimisticConcurrency_doesNotSendChangeVector() throws Exception {
+    public void patch_withOptimisticConcurrency_doesNotSendChangeVector_jsonPatch() throws Exception {
         // session patch does not enforce optimistic concurrency, so a concurrent modification
         // between load and patch + saveChanges must not throw ConcurrencyException
         try (IDocumentStore store = getDocumentStore()) {
@@ -364,6 +364,35 @@ public class RavenDB_22293Test extends RemoteTestBase {
                 UserWithTags user = session.load(UserWithTags.class, "users/1");
                 assertThat(user.getName()).isEqualTo("Updated");
                 assertThat(user.getAge()).isEqualTo(99);
+            }
+        }
+    }
+
+    @Test
+    public void patch_withOptimisticConcurrency_doesNotSendChangeVector_javaScript() throws Exception {
+        // same as above but through the JavaScript path (increment always uses JavaScript),
+        // to confirm both paths behave identically with optimistic concurrency
+        try (IDocumentStore store = getDocumentStore()) {
+            storeUser(store, user("Original", 25));
+
+            try (IDocumentSession session = store.openSession()) {
+                session.advanced().setOptimisticConcurrencyMode(OptimisticConcurrencyMode.WRITES);
+
+                UserWithTags user = session.load(UserWithTags.class, "users/1");
+
+                try (IDocumentSession otherSession = store.openSession()) {
+                    otherSession.load(UserWithTags.class, "users/1").setAge(99);
+                    otherSession.saveChanges();
+                }
+
+                session.advanced().increment(user, "age", 1);
+                assertThat(hasDeferredCommand(session, "users/1", CommandType.PATCH)).isTrue();
+
+                session.saveChanges();
+            }
+
+            try (IDocumentSession session = store.openSession()) {
+                assertThat(session.load(UserWithTags.class, "users/1").getAge()).isEqualTo(100);
             }
         }
     }
